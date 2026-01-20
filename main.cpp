@@ -1,7 +1,7 @@
 ﻿//#define WORKING_DIR "C:/Users/micha/Desktop/studia/sem5/grafika/projekt3/trees/"
 #define OBJ_FILE  "./trees9.obj"
 #define MTL_FILE "./trees9.mtl"
-
+#define WORKING_DIR "./obj_container/"
 //#define OBJ_FILE  "./Rendersss.obj"
 //#define MTL_FILE "./Rendersss.mtl"
 
@@ -9,6 +9,17 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include <string>
+#include <iostream>
+
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#include <commdlg.h>
+#endif
+
 #include "GL/glew.h"
 #include "GL/freeglut.h"
 
@@ -26,23 +37,39 @@
 #include "convertOBJ.h"
 #include "GPUservice.h"
 
+#ifdef _WIN32
+static std::string BrowseForFileA(const char* filter, const char* initialDir)
+{
+    CHAR szFile[MAX_PATH] = { 0 };
+    OPENFILENAMEA ofn;
+    ZeroMemory(&ofn, sizeof(ofn));
+
+    std::string initialAbs;
+    if (initialDir && initialDir[0] != '\0') {
+        CHAR fullPath[MAX_PATH] = { 0 };
+        DWORD ret = GetFullPathNameA(initialDir, MAX_PATH, fullPath, nullptr);
+        if (ret && ret < MAX_PATH) initialAbs = fullPath;
+        else initialAbs = initialDir; // fallback
+    }
+
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = NULL;
+    ofn.lpstrFile = szFile;
+    ofn.nMaxFile = sizeof(szFile);
+    ofn.lpstrFilter = filter;
+    ofn.nFilterIndex = 1;
+    ofn.lpstrInitialDir = initialAbs.c_str();
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR | OFN_EXPLORER;
+    if (GetOpenFileNameA(&ofn))
+        return std::string(szFile);
+    return std::string();
+}
+#endif
+
 void printMatNames(vector<Object>& scene);
 void rysuj(void);
 
-void fixmaterialnames( vector<Object>& scene ){
-    if (scene[0].materialsNames.empty())
-    {
-        cerr << "no first material error";
-        return;
-    }
-    if (scene.size() > 0){
-        for (int i = 1; i < scene.size(); i++){
-            if (scene[i].materialsNames.empty()){
-                scene[i].materialsNames = scene[i - 1].materialsNames;
-            }
-        }
-    }
-}
+
 
 vector<Object> scene;
 unordered_map<string, Mtl> matsy;
@@ -80,9 +107,36 @@ const float BGcol[4] = { 0.8f, 0.8f, 0.8f, 1 };  // BackGround Color
 // ================== MAIN ==================
 int main(int argc, char** argv)
 {
+
+    string startDir = WORKING_DIR;
+    // Filters must be double-null terminated for the Win32 API.
+#ifdef _WIN32
+    const char objFilter[] = "OBJ files (*.obj)\0*.obj\0All files (*.*)\0*.*\0\0";
+    const char mtlFilter[] = "MTL files (*.mtl)\0*.mtl\0All files (*.*)\0*.*\0\0";
+    
+    cout<<"wybierz plik OBJ..."<<endl;
+    string selectedOBJ = BrowseForFileA(objFilter, startDir.c_str());
+    cout<<"wybrano plik obj: " << selectedOBJ;
+    cout<<"wybierz towarzyszący plik MTL..."<<endl;
+    string selectedMTL = BrowseForFileA(mtlFilter, startDir.c_str());
+    cout<<"wybrano plik mtl: " << selectedMTL;
+#else
+    string selectedOBJ;
+    string selectedMTL;
+#endif
+
+    // Fallback to the original macro-based defaults if the user cancelled selection or selection failed.
+    const std::string fallbackOBJ = std::string(WORKING_DIR) + OBJ_FILE;
+    const std::string fallbackMTL = std::string(WORKING_DIR) + MTL_FILE;
+    
+    const std::string OBJfile = selectedOBJ.empty() ? fallbackOBJ : selectedOBJ;
+    const std::string MTLfile = selectedMTL.empty() ? fallbackMTL : selectedMTL;
+
+    std::cout << "OBJ file: " << OBJfile << std::endl;
+    std::cout << "MTL file: " << MTLfile << std::endl;
     //====================== CZYTANIE PLIKOW =================================================================
-    const string OBJfile = WORKING_DIR  OBJ_FILE;
-    const string MTLfile = WORKING_DIR  MTL_FILE;
+    //const string OBJfile = WORKING_DIR  OBJ_FILE;
+    //const string MTLfile = WORKING_DIR  MTL_FILE;
 
 
     if (loadOBJ(OBJfile, scene) != 0 || readMTL(MTLfile, matsy) != 0) {
@@ -95,10 +149,7 @@ int main(int argc, char** argv)
     printMatNames(scene);
     cout << matsy[scene[0].materialsNames[0]].texturePath;
 
-    // ================== konwersja OBJ =================================
-    
-    
-
+    // ================== Środek Sceny  =================================
     computeSceneBoundsAndDistance(Gpositions, sceneCenter, sceneDistance, fovY, aspect, 1.15f);
 
     // ==================== PROGRAM GRAFICZNY ===================================
@@ -137,6 +188,11 @@ int main(int argc, char** argv)
 
 
     }
+    //============ ZWALNIANIE PAMIĘCI ==================
+    vector<float>().swap(Gpositions);
+    vector<float>().swap(Gtexcoords);
+    vector<float>().swap(Gnormals);
+    vector<Object>().swap(scene);
 
 
     programID = loadShaders("vertex_shader.glsl", "fragment_shader.glsl");
@@ -179,11 +235,7 @@ void rysuj(void)
         glUniform3fv(uLightPosLoc, 1, &lightPos[0]);
 
     // ===== KAMERA =====
-    glm::vec3 viewPos(
-        sceneCenter.x,
-        sceneCenter.y,
-        sceneDistance
-    );
+    glm::vec3 viewPos( sceneCenter.x, sceneCenter.y, sceneDistance);
     if (uViewPosLoc != -1)
         glUniform3fv(uViewPosLoc, 1, &viewPos[0]);
 

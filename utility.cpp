@@ -74,7 +74,7 @@ void klawisz( unsigned char key, int x, int y )
     case 'J':
     case 'j':
         SolidCol.b += (mod & GLUT_ACTIVE_SHIFT) ? -0.05f : 0.05f;
-        SolidCol.b = std::clamp(SolidCol.g, 0.0f, 1.0f);
+        SolidCol.b = std::clamp(SolidCol.b, 0.0f, 1.0f);
         break;
     }
 

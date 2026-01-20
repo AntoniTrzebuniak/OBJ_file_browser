@@ -95,3 +95,18 @@ int loadOBJ(const string& filename, vector<Object>& scene) {
 
     return 0;
 }
+
+void fixmaterialnames( vector<Object>& scene ){
+    if (scene[0].materialsNames.empty())
+    {
+        cerr << "no first material error";
+        return;
+    }
+    if (scene.size() > 0){
+        for (int i = 1; i < scene.size(); i++){
+            if (scene[i].materialsNames.empty()){
+                scene[i].materialsNames = scene[i - 1].materialsNames;
+            }
+        }
+    }
+}

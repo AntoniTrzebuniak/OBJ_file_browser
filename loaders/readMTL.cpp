@@ -78,3 +78,4 @@ int readMTL(const string& filename, unordered_map<string, Mtl>& materialMap){
     file.close();
     return 0;
 }
+

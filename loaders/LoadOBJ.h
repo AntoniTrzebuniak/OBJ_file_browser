@@ -22,4 +22,7 @@ struct Object {
 int loadOBJ(const string& filename, vector<Object>& scene);
 
 static void parseFaceElement(const string& element, vector<int>& faces);
+
+void fixmaterialnames(vector<Object>& scene);
+
 #endif
