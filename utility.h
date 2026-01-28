@@ -26,15 +26,16 @@ extern int pozycjaMyszyX; // na ekranie
 extern int pozycjaMyszyY;
 extern int mbutton; // wcisiety klawisz myszy
 
-extern double kameraX;
-extern double kameraZ;
-extern double kameraD;
-extern double kameraPredkosc;
-extern double kameraKat;
-extern double kameraPredkoscObrotu;
-extern double poprzednie_kameraX;
-extern double poprzednie_kameraZ;
-extern double poprzednie_kameraD;
+
+extern glm::vec3 camPos;
+extern glm::vec3 camFront;
+extern glm::vec3 camUp;
+extern glm::vec3 camRight;
+extern float camYaw;
+extern float camPitch;
+extern float camMouseSensitivity;
+extern float camPanSensitivity;
+extern float camScrollStep;
 
 extern double rotation;
 extern double blend;
@@ -69,7 +70,9 @@ extern glm::vec3 SolidCol;
 
 
 void klawisz( unsigned char key, int x, int y );
-void mysz(int button,int state,int x,int y);
-void mysz_ruch(int x,int y);
-void rysuj(void);
-void rozmiar(int w,int h);
+void mysz( int button, int state, int x, int y );
+void mysz_ruch( int x, int y );
+void rysuj( void );
+void rozmiar( int w, int h );
+static void updateCameraVectors();
+void initFreeCamera( const glm::vec3& center, float distance );
